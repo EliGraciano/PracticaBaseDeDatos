@@ -28,7 +28,6 @@ def bajas(index):
         resto = archivo.read()
         archivo.seek(pos)
         archivo.write(resto)
-        archivo.truncate()
 
 def offset(index):
     if index == 1:
@@ -57,6 +56,22 @@ def modificacion(index,apellido,nombre,codigo):
             archivo.write(codigo.encode('utf-8'))
         else:
             archivo.seek(tamañoCodigo,1)
+
+
+def listaPersonas():
+    with open("Archivo.txt","r") as archivo:
+        i = 0
+        tamanio = archivo.read()
+        tamanio = len(tamanio)
+        while i < tamanio:
+            apellido = archivo.read(tamañoApellido)
+            nombre = archivo.read(tamañoNombre)
+            codigo = archivo.read(tamañoCodigo)
+            i+36
+
+
+
+
 
 
 def main():
