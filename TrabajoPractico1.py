@@ -28,50 +28,55 @@ def bajas(index):
         resto = archivo.read()
         archivo.seek(pos)
         archivo.write(resto)
+        archivo.truncate()
 
 def offset(index):
-    if index == 1:
-        offset1 = 0
-        return offset1
-    else:
-        offset1 = tamañoDato * index
-        return offset1
+    offset1 = tamañoDato * (index-1)
+    return offset1
 
-def modificacion(index,apellido,nombre,codigo):
+def modificacion(index, apellido, nombre, codigo):
     pos = offset(index)
-    with open('archivo.txt', 'r+b') as archivo:
+    with open('Archivo.txt', 'r+b') as archivo:
         archivo.seek(pos)
+
         if apellido is not None:
-            apellido = apellido.ljust(tamañoApellido)
+            apellido = apellido.ljust(tamañoApellido)[:tamañoApellido]
             archivo.write(apellido.encode('utf-8'))
         else:
-            archivo.seek(tamañoApellido,1)
+            archivo.seek(tamañoApellido, 1)
+
         if nombre is not None:
-            nombre = nombre.ljust(tamañoNombre)
+            nombre = nombre.ljust(tamañoNombre)[:tamañoNombre]
             archivo.write(nombre.encode('utf-8'))
         else:
-            archivo.seek(tamañoNombre,1)
+            archivo.seek(tamañoNombre, 1)
+
         if codigo is not None:
-            codigo = codigo.ljust(tamañoCodigo)
+            codigo = codigo.ljust(tamañoCodigo)[:tamañoCodigo]
             archivo.write(codigo.encode('utf-8'))
         else:
-            archivo.seek(tamañoCodigo,1)
+            archivo.seek(tamañoCodigo, 1)
 
 
-def listaPersonas():
-    with open("Archivo.txt","r") as archivo:
+def listaClientes():
+    with open("Archivo.txt","rt") as archivo:
+        archivo.seek(0, 2)  #paro el cursor al final para calcular el tamaño
+        tamanio = archivo.tell()
+        archivo.seek(0) # paro el cursor al principio despues de calcular el tamaño
         i = 0
-        tamanio = archivo.read()
-        tamanio = len(tamanio)
-        while i < tamanio:
-            apellido = archivo.read(tamañoApellido)
-            nombre = archivo.read(tamañoNombre)
-            codigo = archivo.read(tamañoCodigo)
-            i+36
-
-
-
-
+        j = 1
+        elementos = (tamanio / tamañoDato)
+        while i < elementos:
+            apellido = archivo.read(tamañoApellido).strip()
+            nombre = archivo.read(tamañoNombre).strip()
+            codigo = archivo.read(tamañoCodigo).strip()
+            print("Cliente ", j)
+            print("Apellido: ", apellido)
+            print("Nombre: ", nombre)
+            print("Código: ", codigo)
+            print("----------------------")
+            i += 1
+            j +=1
 
 
 def main():
@@ -81,7 +86,8 @@ def main():
         print("2. Eliminar datos (Baja)")
         print("3. Modificar datos")
         print("4. Leer datos")
-        print("5. Salir")
+        print("5. Mostrar Lista de Clientes")
+        print("6. Salir")
 
         opcion = input("Selecciona una opción: ")
 
@@ -126,6 +132,11 @@ def main():
             print(f"Registro en índice {index}: Apellido: {apellido}, Nombre: {nombre}, Código: {codigo}")
 
         elif opcion == '5':
+            print("Listado de Clientas:")
+            print("----------------------")
+            listaClientes()
+
+        elif opcion == '6':
             # Salir
             print("Saliendo del programa...")
             break
