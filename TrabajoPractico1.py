@@ -14,7 +14,7 @@ def altas(apellido,nombre,codigo):
 
 def leerdatos(index):
     pos = offset(index)
-    with open("Archivo.txt","r",encoding="utf-8") as archivo:
+    with open("Archivo.txt","rt",encoding="utf-8") as archivo:
         archivo.seek(pos)
         apellido = archivo.read(tamañoApellido).strip()
         nombre = archivo.read(tamañoNombre).strip()
@@ -24,14 +24,19 @@ def leerdatos(index):
 def bajas(index):
     pos = offset(index)
     with open("Archivo.txt","r+",encoding="utf-8") as archivo:
-        archivo.seek(pos)
+        archivo.seek(pos + tamañoDato)
         resto = archivo.read()
         archivo.seek(pos)
-        archivo.write(resto[tamañoDato:])
+        archivo.write(resto)
+        archivo.truncate()
 
 def offset(index):
-    offset1 = tamañoDato * index
-    return offset1
+    if index == 1:
+        offset1 = 0
+        return offset1
+    else:
+        offset1 = tamañoDato * index
+        return offset1
 
 def modificacion(index,apellido,nombre,codigo):
     pos = offset(index)
@@ -112,5 +117,6 @@ def main():
 
         else:
             print("Opción no válida. Por favor, elija una opción del 1 al 5.")
+    return
 
 main()
