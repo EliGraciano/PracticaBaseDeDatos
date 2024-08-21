@@ -85,9 +85,8 @@ def main():
         print("1. Cargar datos (Alta)")
         print("2. Eliminar datos (Baja)")
         print("3. Modificar datos")
-        print("4. Leer datos")
-        print("5. Mostrar Lista de Clientes")
-        print("6. Salir")
+        print("4. Mostrar Lista de Clientes")
+        print("5. Salir")
 
         opcion = input("Selecciona una opción: ")
 
@@ -124,19 +123,19 @@ def main():
 
             modificacion(index, apellido, nombre, codigo)
             print(f"Registro en índice {index} modificado correctamente.")
+        #
+        # elif opcion == '4':
+        #     # Leer datos
+        #     index = int(input("Ingrese el índice del registro a leer: "))
+        #     apellido, nombre, codigo = leerdatos(index)
+        #     print(f"Registro en índice {index}: Apellido: {apellido}, Nombre: {nombre}, Código: {codigo}")
 
         elif opcion == '4':
-            # Leer datos
-            index = int(input("Ingrese el índice del registro a leer: "))
-            apellido, nombre, codigo = leerdatos(index)
-            print(f"Registro en índice {index}: Apellido: {apellido}, Nombre: {nombre}, Código: {codigo}")
-
-        elif opcion == '5':
             print("Listado de Clientas:")
             print("----------------------")
             listaClientes()
 
-        elif opcion == '6':
+        elif opcion == '5':
             # Salir
             print("Saliendo del programa...")
             break
