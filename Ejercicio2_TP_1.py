@@ -1,75 +1,121 @@
 from os import write
-
-tamañoApellido = 16
-tamañoNombre = 16
-tamañoCodigo = 4
-tamañoDato = 36
+import os
+TAMANIOAPELLIDO = 16
+TAMANIONOMBRE = 16
+TAMANIOCODIGO = 4
+TAMANIODATO= TAMANIOCODIGO + TAMANIOAPELLIDO + TAMANIONOMBRE
+CANTREGISTROS = 700 # TODO: para luego implementar funcion que calcule el primer numero primo despues de cantidad registros
+TAMANIOHASH = 701 * TAMANIODATO
+PATH = "ArchivoHash.txt"
 """si multiplico 36 por la cantidad de datos,obtengo el tamaño del archivo"""
-"""archivo =open("Archivo.txt","wt")"""
-def altas(apellido,nombre,codigo):
-    with open("Archivo.txt","a",encoding="utf-8") as archivo:
-        archivo.write(apellido.ljust(tamañoApellido))
-        archivo.write(nombre.ljust(tamañoNombre))
-        archivo.write(codigo.ljust(tamañoCodigo))
+def crearArchivo():
+    # TODO: crear en un file a parte la funcion
+    with open(PATH,"wt") as archivo:
+        archivo.write(" " * TAMANIOHASH)
 
-def leerdatos(index):
-    pos = offset(index)
-    with open("Archivo.txt","rt",encoding="utf-8") as archivo:
+def getoffset(codigo):
+    return (hashFunction(int(codigo))-1 ) * TAMANIODATO
+
+def hashFunction(Codigo):
+    return Codigo % 701
+
+def insert(new_apellido,new_nombre,new_codigo):
+    writeByPK(new_apellido, new_nombre, new_codigo)
+
+def readOverflow(codigo):
+    i = TAMANIOHASH
+    dato = readByOffset(i)
+    while dato[2] != "":
+        dato = readByOffset(i)
+        if dato[2] == codigo:
+            return dato
+        i += TAMANIODATO
+    return None
+
+def readByPK(codigo):
+    pos = getoffset(codigo)
+    dato = readByOffset(pos)
+    if dato[2] == codigo:
+        return dato
+    else:
+        return readOverflow(codigo)
+
+def readByOffset(pos):
+    with open(PATH,"rt") as archivo:
         archivo.seek(pos)
-        apellido = archivo.read(tamañoApellido).strip()
-        nombre = archivo.read(tamañoNombre).strip()
-        codigo = archivo.read(tamañoCodigo).strip()
+        apellido = archivo.read(TAMANIOAPELLIDO)
+        nombre = archivo.read(TAMANIONOMBRE)
+        codigo = archivo.read(TAMANIOCODIGO)
         return apellido,nombre,codigo
 
-def bajas(index):
+def writeByPK(apellido,nombre,codigo):
+    pos = getoffset(codigo)
+    dato = readByPK(codigo)
+    if dato is not None:
+        if readByOffset(codigo)[2] != "":
+            pass #TODO:  escribirlo en la zona overflow(apend porque es al final)
+        writeByOffset(pos,apellido,nombre,codigo)
+    else: #tirar error
+        return  None
+
+
+def writeByOffset(pos,apellido,nombre,codigo):
+    #escribe donde le ordeno
+    with open(PATH,"r+") as archivo:
+        archivo.seek(pos)
+        archivo.write(apellido.ljust(TAMANIOAPELLIDO).encode("utf-8"))
+        archivo.write(nombre.ljust(TAMANIONOMBRE).encode("utf-8"))
+        archivo.write(codigo.ljust(TAMANIOCODIGO).encode("utf-8"))
+
+
+def delete(index):
+    #corregido
     pos = offset(index)
-    with open("Archivo.txt","r+",encoding="utf-8") as archivo:
-        archivo.seek(pos + tamañoDato)
+    with open(PATH,"r+b") as archivo:
+        archivo.seek(-TAMANIODATO,2)
         resto = archivo.read()
         archivo.seek(pos)
         archivo.write(resto)
+        archivo.seek(-TAMANIODATO,2)
         archivo.truncate()
 
-def offset(index):
-    if index == 1:
-        offset1 = 0
-        return offset1
-    else:
-        offset1 = tamañoDato * index
-        return offset1
-
-def
-
-
-def modificacion(index,apellido,nombre,codigo):
+def update(index, new_apellido, new_nombre, new_codigo):
     pos = offset(index)
-    with open('archivo.txt', 'r+b') as archivo:
-        archivo.seek(pos)
-        if apellido is not None:
-            apellido = apellido.ljust(tamañoApellido)
-            archivo.write(apellido.encode('utf-8'))
-        else:
-            archivo.seek(tamañoApellido,1)
-        if nombre is not None:
-            nombre = nombre.ljust(tamañoNombre)
-            archivo.write(nombre.encode('utf-8'))
-        else:
-            archivo.seek(tamañoNombre,1)
-        if codigo is not None:
-            codigo = codigo.ljust(tamañoCodigo)
-            archivo.write(codigo.encode('utf-8'))
-        else:
-            archivo.seek(tamañoCodigo,1)
+    old_apellido,old_nombre,old_codigo = readByPK(index)
+    if new_apellido is None:
+        new_apellido = old_apellido
 
+    if new_nombre is None:
+        new_nombre = old_nombre
+
+    if new_codigo is None:
+        new_codigo = old_codigo
+
+    writeByPK(index,new_apellido,new_nombre,new_codigo)
+
+
+
+def listaClientes():
+    index = 1
+    while True:
+        apellido,nombre,codigo = readByPK(index)
+        if not codigo:
+            break
+        print("Cliente ", index)
+        print("Apellido: ", apellido)
+        print("Nombre: ", nombre)
+        print("Código: ", codigo)
+        print("----------------------")
+        index += 1
 
 def main():
     while True:
         print("\nMenú de Opciones")
+        print("0. Salir")
         print("1. Cargar datos (Alta)")
         print("2. Eliminar datos (Baja)")
         print("3. Modificar datos")
-        print("4. Leer datos")
-        print("5. Salir")
+        print("4. Mostrar Lista de Clientes")
 
         opcion = input("Selecciona una opción: ")
 
@@ -78,19 +124,19 @@ def main():
             apellido = input("Ingrese el apellido: ")
             nombre = input("Ingrese el nombre: ")
             codigo = input("Ingrese el código: ")
-            altas(apellido, nombre, codigo)
+            insert(apellido, nombre, codigo)
             print("Registro agregado correctamente.")
 
         elif opcion == '2':
             # Eliminar datos
             index = int(input("Ingrese el índice del registro a eliminar: "))
-            bajas(index)
+            delete(index)
             print(f"Registro en índice {index} eliminado correctamente.")
 
         elif opcion == '3':
             # Modificar datos
             index = int(input("Ingrese el índice del registro a modificar: "))
-            apellidoaux,nombreaux,codigoaux = leerdatos(index)
+            apellidoaux,nombreaux,codigoaux = readByPK(index)
             print("Datos a modificar: ")
             print("apellido: ",apellidoaux)
             print("Nombre: ",nombreaux)
@@ -104,22 +150,21 @@ def main():
             nombre = nombre if nombre != "" else None
             codigo = codigo if codigo != "" else None
 
-            modificacion(index, apellido, nombre, codigo)
+            update(index, apellido, nombre, codigo)
             print(f"Registro en índice {index} modificado correctamente.")
 
         elif opcion == '4':
-            # Leer datos
-            index = int(input("Ingrese el índice del registro a leer: "))
-            apellido, nombre, codigo = leerdatos(index)
-            print(f"Registro en índice {index}: Apellido: {apellido}, Nombre: {nombre}, Código: {codigo}")
+            print("Listado de Clientas:")
+            print("----------------------")
+            listaClientes()
 
-        elif opcion == '5':
+        elif opcion == '0':
             # Salir
             print("Saliendo del programa...")
             break
 
         else:
-            print("Opción no válida. Por favor, elija una opción del 1 al 5.")
+            print("Opción no válida. Por favor, elija una opción del 0 al 4.")
     return
 
 main()
