@@ -1,3 +1,4 @@
+from multiprocessing.spawn import old_main_modules
 from os import write
 import os
 TAMANIOAPELLIDO = 16
@@ -24,11 +25,11 @@ def insert(new_apellido,new_nombre,new_codigo):
 
 def readOverflow(codigo):
     i = TAMANIOHASH
-    dato = readByOffset(i)
-    while dato[2] != "":
-        dato = readByOffset(i)
-        if dato[2] == codigo:
-            return dato
+    registro = readByOffset(i)
+    while registro[2] != "":
+        registro = readByOffset(i)
+        if registro[2] == codigo:
+            return registro
         i += TAMANIODATO
     return None
 
@@ -40,6 +41,12 @@ def readByPK(codigo):
     else:
         return readOverflow(codigo)
 
+def writeinOverflow(apellido,nombre,codigo):
+    with open(PATH,"at") as archivo:
+        archivo.write(apellido.ljust(TAMANIOAPELLIDO).encode("utf-8"))
+        archivo.write(nombre.ljust(TAMANIONOMBRE).encode("utf-8"))
+        archivo.write(codigo.ljust(TAMANIOCODIGO).encode("utf-8"))
+
 def readByOffset(pos):
     with open(PATH,"rt") as archivo:
         archivo.seek(pos)
@@ -48,14 +55,16 @@ def readByOffset(pos):
         codigo = archivo.read(TAMANIOCODIGO)
         return apellido,nombre,codigo
 
-def writeByPK(apellido,nombre,codigo):
-    pos = getoffset(codigo)
-    dato = readByPK(codigo)
-    if dato is not None:
-        if readByOffset(codigo)[2] != "":
-            pass #TODO:  escribirlo en la zona overflow(apend porque es al final)
-        writeByOffset(pos,apellido,nombre,codigo)
-    else: #tirar error
+def writeByPK(new_apellido,new_nombre,new_codigo):
+    pos = getoffset(new_codigo)
+    new_registro = readByPK(new_codigo)
+    if new_registro is not None:
+        if readOverflow(new_codigo)[2] != "":                       # if readByOffset(new_codigo)[2] != "":
+            writeinOverflow(new_apellido,new_nombre,new_codigo)     # writeinOverflow(new_apellido,new_nombre,new_codigo)
+        else:
+            #le tengo que pasar un codigo que sea : ""
+            writeByOffset(new_apellido,new_nombre,new_codigo)
+    else:
         return  None
 
 
@@ -68,20 +77,13 @@ def writeByOffset(pos,apellido,nombre,codigo):
         archivo.write(codigo.ljust(TAMANIOCODIGO).encode("utf-8"))
 
 
-def delete(index):
-    #corregido
-    pos = offset(index)
-    with open(PATH,"r+b") as archivo:
-        archivo.seek(-TAMANIODATO,2)
-        resto = archivo.read()
-        archivo.seek(pos)
-        archivo.write(resto)
-        archivo.seek(-TAMANIODATO,2)
-        archivo.truncate()
+def delete(old_codigo):
+    update("".ljust(TAMANIOAPELLIDO),"".ljust(TAMANIONOMBRE),old_codigo)
 
-def update(index, new_apellido, new_nombre, new_codigo):
-    pos = offset(index)
-    old_apellido,old_nombre,old_codigo = readByPK(index)
+#como hago para hacer que mi update tambien borre(pasarle to.do vacio,ya que el codigo no puedo)
+def update(new_apellido, new_nombre, new_codigo):
+    pos = getoffset(new_codigo)
+    old_apellido,old_nombre,old_codigo = readByPK(new_codigo)
     if new_apellido is None:
         new_apellido = old_apellido
 
@@ -89,9 +91,10 @@ def update(index, new_apellido, new_nombre, new_codigo):
         new_nombre = old_nombre
 
     if new_codigo is None:
-        new_codigo = old_codigo
+        new_codigo = "".ljust(TAMANIOCODIGO)
 
-    writeByPK(index,new_apellido,new_nombre,new_codigo)
+
+    writeByPK(pos,new_apellido,new_nombre,new_codigo)
 
 
 
