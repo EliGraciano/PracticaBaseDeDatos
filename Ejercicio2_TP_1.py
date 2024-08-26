@@ -36,7 +36,7 @@ def readOverflow(codigo):
 def readByPK(codigo):
     pos = getoffset(codigo)
     dato = readByOffset(pos)
-    if dato[2] != codigo:
+    if dato[2] == codigo:
         return dato
     elif dato[2] == "    ":
         return None
@@ -133,7 +133,7 @@ def listaClientes():
         index += 1
 
 def main():
-    #crearArchivo()
+    crearArchivo()
     while True:
         print("\nMenú de Opciones")
         print("0. Salir")
@@ -197,7 +197,8 @@ def main():
             print("Opción no válida. Por favor, elija una opción del 0 al 4.")
 
     return
-main()
-# insort()
+#crearArchivo()
+#main()
+insert("Romero","Juancruz","30",)
 # #update("Gimenez","Juancruz","1234","1234")
 # delete(1234)
