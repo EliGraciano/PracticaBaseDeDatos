@@ -1,6 +1,6 @@
-from multiprocessing.spawn import old_main_modules
+from bisect import insort
 from os import write
-import os
+
 TAMANIOAPELLIDO = 16
 TAMANIONOMBRE = 16
 TAMANIOCODIGO = 4
@@ -18,7 +18,7 @@ def getoffset(codigo):
     return (hashFunction(int(codigo))-1 ) * TAMANIODATO
 
 def hashFunction(Codigo):
-    return Codigo % 701
+    return TAMANIOHASH % Codigo
 
 def insert(new_apellido,new_nombre,new_codigo):
     writeByPK(new_apellido, new_nombre, new_codigo)
@@ -31,21 +31,23 @@ def readOverflow(codigo):
         if registro[2] == codigo:
             return registro
         i += TAMANIODATO
-    return None
+    return ""
 
 def readByPK(codigo):
     pos = getoffset(codigo)
     dato = readByOffset(pos)
-    if dato[2] == codigo:
+    if dato[2] != codigo:
         return dato
+    elif dato[2] == "    ":
+        return None
     else:
         return readOverflow(codigo)
 
 def writeinOverflow(apellido,nombre,codigo):
     with open(PATH,"at") as archivo:
-        archivo.write(apellido.ljust(TAMANIOAPELLIDO).encode("utf-8"))
-        archivo.write(nombre.ljust(TAMANIONOMBRE).encode("utf-8"))
-        archivo.write(codigo.ljust(TAMANIOCODIGO).encode("utf-8"))
+        archivo.write(apellido.ljust(TAMANIOAPELLIDO))
+        archivo.write(nombre.ljust(TAMANIONOMBRE))
+        archivo.write(codigo.ljust(TAMANIOCODIGO))
 
 def readByOffset(pos):
     with open(PATH,"rt") as archivo:
@@ -58,42 +60,55 @@ def readByOffset(pos):
 def writeByPK(new_apellido,new_nombre,new_codigo):
     pos = getoffset(new_codigo)
     old_registro = readByPK(new_codigo)
-    if old_registro is not None:
-        if readOverflow(new_codigo)[2] != "":                       # if readByOffset(new_codigo)[2] != "":
-            writeinOverflow(new_apellido,new_nombre,new_codigo)     # writeinOverflow(new_apellido,new_nombre,new_codigo)
-        else:
-            #le tengo que pasar un codigo que sea : ""
-            writeByOffset(pos,new_apellido,new_nombre,new_codigo)
+    if old_registro is None:
+        writeByOffset(pos,new_apellido,new_nombre,new_codigo)
     else:
-        return  None
+        if readOverflow(new_codigo) == "":
+            writeinOverflow(new_apellido,new_nombre,new_codigo)
+        else:
+            return
 
 
 def writeByOffset(pos,apellido,nombre,codigo):
     #escribe donde le ordeno
     with open(PATH,"r+") as archivo:
         archivo.seek(pos)
-        archivo.write(apellido.ljust(TAMANIOAPELLIDO).encode("utf-8"))
-        archivo.write(nombre.ljust(TAMANIONOMBRE).encode("utf-8"))
-        archivo.write(codigo.ljust(TAMANIOCODIGO).encode("utf-8"))
+        archivo.write(apellido.ljust(TAMANIOAPELLIDO))
+        archivo.write(nombre.ljust(TAMANIONOMBRE))
+        archivo.write(codigo.ljust(TAMANIOCODIGO))
 
 
 def delete(old_codigo):
-    update("".ljust(TAMANIOAPELLIDO),"".ljust(TAMANIONOMBRE),old_codigo)
+    pos = getoffset(old_codigo)
+    registro = readByPK(old_codigo)
+    empty_apellido = "".ljust(TAMANIOAPELLIDO)
+    empty_nombre = "".ljust(TAMANIONOMBRE)
+    writeByOffset(pos, empty_apellido, empty_nombre, old_codigo)
 
 #como hago para hacer que mi update tambien borre(pasarle to.do vacio,ya que el codigo no puedo)
-def update(new_apellido, new_nombre, new_codigo):
-    pos = getoffset(new_codigo)
-    old_apellido,old_nombre,old_codigo = readByPK(new_codigo)
-    if new_apellido is None:
-        new_apellido = old_apellido
+def update(new_apellido, new_nombre, new_codigo,codigo_registro):
+    pos = getoffset(codigo_registro)
+    old_registro = readByPK(new_codigo)
+    if new_apellido == "":
+        new_apellido = "".ljust(TAMANIOAPELLIDO)
+    elif new_apellido is None:
+        new_apellido = old_registro[0]
 
-    if new_nombre is None:
-        new_nombre = old_nombre
+    if new_nombre == "":
+        new_nombre = "".ljust(TAMANIONOMBRE)
+    elif new_nombre is None:
+        new_nombre = old_registro[1]
 
-    if new_codigo is None:
-        new_codigo = old_codigo
+    if new_codigo == "":
+        new_codigo = old_registro[2]
 
-    writeByPK(new_apellido,new_nombre,new_codigo)
+    if new_codigo == old_registro[2]:
+        writeByPK(new_apellido, new_nombre, new_codigo)
+    else:
+        #actualiza el mismo Registro si el código no se cambia
+        delete(codigo_registro)
+        writeByOffset(pos, new_apellido, new_nombre, new_codigo)
+
 
 def mostrarcliente(codigo):
     apellido,nombre,old_codigo = readByPK(codigo)
@@ -182,5 +197,7 @@ def main():
             print("Opción no válida. Por favor, elija una opción del 0 al 4.")
 
     return
-
 main()
+# insort()
+# #update("Gimenez","Juancruz","1234","1234")
+# delete(1234)
