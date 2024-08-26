@@ -1,53 +1,67 @@
-from bisect import insort
-from os import write
-
 TAMANIOAPELLIDO = 16
 TAMANIONOMBRE = 16
 TAMANIOCODIGO = 4
 TAMANIODATO= TAMANIOCODIGO + TAMANIOAPELLIDO + TAMANIONOMBRE
-CANTREGISTROS = 700 # TODO: para luego implementar funcion que calcule el primer numero primo despues de cantidad registros
+CANTREGISTROS = 700
 TAMANIOHASH = 701 * TAMANIODATO
 PATH = "ArchivoHash.txt"
 """si multiplico 36 por la cantidad de datos,obtengo el tamaño del archivo"""
-def crearArchivo():
-    # TODO: crear en un file a parte la funcion
-    with open(PATH,"wt") as archivo:
-        archivo.write(" " * TAMANIOHASH)
 
 def getoffset(codigo):
     return (hashFunction(int(codigo))-1 ) * TAMANIODATO
 
 def hashFunction(Codigo):
-    return TAMANIOHASH % Codigo
+    return  Codigo % TAMANIOHASH
 
 def insert(new_apellido,new_nombre,new_codigo):
     writeByPK(new_apellido, new_nombre, new_codigo)
+
+def searchOverflow(codigo):
+    i = TAMANIOHASH
+    registro = readByOffset(i)
+    while registro[2] != "":
+        if registro[2] == str(codigo):
+            return i
+        i += TAMANIODATO
+        registro = readByOffset(i)
+    return ""
+
+def searchbypk(codigo):
+    pos = getoffset(codigo)
+    old_registro = readByOffset(pos)
+    if old_registro[2] == str(codigo):
+        return pos
+    else:
+        return searchOverflow(codigo)
+
 
 def readOverflow(codigo):
     i = TAMANIOHASH
     registro = readByOffset(i)
     while registro[2] != "":
-        registro = readByOffset(i)
         if registro[2] == codigo:
             return registro
         i += TAMANIODATO
+        registro = readByOffset(i)
     return ""
 
 def readByPK(codigo):
     pos = getoffset(codigo)
     dato = readByOffset(pos)
-    if dato[2] == codigo:
+    if dato[2] == str(codigo):
         return dato
     elif dato[2] == "    ":
         return None
     else:
         return readOverflow(codigo)
 
+
 def writeinOverflow(apellido,nombre,codigo):
     with open(PATH,"at") as archivo:
         archivo.write(apellido.ljust(TAMANIOAPELLIDO))
         archivo.write(nombre.ljust(TAMANIONOMBRE))
         archivo.write(codigo.ljust(TAMANIOCODIGO))
+
 
 def readByOffset(pos):
     with open(PATH,"rt") as archivo:
@@ -57,10 +71,11 @@ def readByOffset(pos):
         codigo = archivo.read(TAMANIOCODIGO)
         return apellido,nombre,codigo
 
+
 def writeByPK(new_apellido,new_nombre,new_codigo):
     pos = getoffset(new_codigo)
-    old_registro = readByPK(new_codigo)
-    if old_registro is None:
+    old_registro = readByOffset(pos)
+    if old_registro[2].isspace():
         writeByOffset(pos,new_apellido,new_nombre,new_codigo)
     else:
         if readOverflow(new_codigo) == "":
@@ -72,43 +87,28 @@ def writeByPK(new_apellido,new_nombre,new_codigo):
 def writeByOffset(pos,apellido,nombre,codigo):
     #escribe donde le ordeno
     with open(PATH,"r+") as archivo:
-        archivo.seek(pos)
+        archivo.seek(int(pos))
         archivo.write(apellido.ljust(TAMANIOAPELLIDO))
         archivo.write(nombre.ljust(TAMANIONOMBRE))
         archivo.write(codigo.ljust(TAMANIOCODIGO))
 
 
 def delete(old_codigo):
-    pos = getoffset(old_codigo)
-    registro = readByPK(old_codigo)
-    empty_apellido = "".ljust(TAMANIOAPELLIDO)
-    empty_nombre = "".ljust(TAMANIONOMBRE)
-    writeByOffset(pos, empty_apellido, empty_nombre, old_codigo)
+    writeByOffset(searchbypk(old_codigo),"","","")
+    garbageCollector()
+
 
 #como hago para hacer que mi update tambien borre(pasarle to.do vacio,ya que el codigo no puedo)
 def update(new_apellido, new_nombre, new_codigo,codigo_registro):
-    pos = getoffset(codigo_registro)
-    old_registro = readByPK(new_codigo)
-    if new_apellido == "":
-        new_apellido = "".ljust(TAMANIOAPELLIDO)
-    elif new_apellido is None:
+    old_registro = readByPK(codigo_registro)
+    if new_apellido.isspace():
         new_apellido = old_registro[0]
-
-    if new_nombre == "":
-        new_nombre = "".ljust(TAMANIONOMBRE)
-    elif new_nombre is None:
+    if new_nombre.isspace():
         new_nombre = old_registro[1]
-
-    if new_codigo == "":
+    if new_codigo.isspace():
         new_codigo = old_registro[2]
-
-    if new_codigo == old_registro[2]:
-        writeByPK(new_apellido, new_nombre, new_codigo)
-    else:
-        #actualiza el mismo Registro si el código no se cambia
-        delete(codigo_registro)
-        writeByOffset(pos, new_apellido, new_nombre, new_codigo)
-
+    delete(codigo_registro)
+    insert(new_apellido,new_nombre, new_codigo)
 
 def mostrarcliente(codigo):
     apellido,nombre,old_codigo = readByPK(codigo)
@@ -120,20 +120,39 @@ def mostrarcliente(codigo):
 
 
 def listaClientes():
-    index = 1
-    while True:
-        apellido,nombre,codigo = readByPK(index)
-        if not codigo:
-            break
-        print("Cliente ", index)
-        print("Apellido: ", apellido)
-        print("Nombre: ", nombre)
-        print("Código: ", codigo)
-        print("----------------------")
-        index += 1
+    pos = 0
+    apellido,nombre,codigo = readByOffset(pos)
+    while codigo != "":
+        if not codigo.isspace():
+            print("Apellido:", apellido)
+            print("Nombre:", nombre)
+            print("Código:", codigo)
+            print("----------------------")
+        pos += 36
+        apellido,nombre,codigo = readByOffset(pos)
+
+def garbageCollector():
+    pos = TAMANIOHASH
+    with open(PATH,"r+b") as archivo:
+        archivo.seek(pos)
+        registro = archivo.read(TAMANIODATO)
+        while registro != "".encode("utf-8"):
+            if registro.isspace():
+                archivo.seek(-TAMANIODATO,2)
+                ultimoRegistro = archivo.read(TAMANIODATO)
+                archivo.seek(pos)
+                archivo.write(ultimoRegistro)
+                archivo.seek(-TAMANIODATO,2)
+                archivo.truncate()
+            else:
+                pos += 36
+            archivo.seek(pos)
+            registro = archivo.read(TAMANIODATO)
+
+
 
 def main():
-    crearArchivo()
+    #crearArchivo()
     while True:
         print("\nMenú de Opciones")
         print("0. Salir")
@@ -141,7 +160,6 @@ def main():
         print("2. Eliminar datos (Baja)")
         print("3. Modificar datos")
         print("4. Mostrar Lista de Clientes")
-        print("5. Mostrar cliente")
 
         opcion = input("Selecciona una opción: ")
 
@@ -150,43 +168,33 @@ def main():
             apellido = input("Ingrese el apellido: ")
             nombre = input("Ingrese el nombre: ")
             codigo = input("Ingrese el código: ")
-            insert(apellido, nombre, codigo)
+            insert(apellido.ljust(TAMANIOAPELLIDO), nombre.ljust(TAMANIONOMBRE), codigo.ljust(TAMANIOCODIGO))
             print("Registro agregado correctamente.")
 
         elif opcion == '2':
             # Eliminar datos
-            index = int(input("Ingrese el índice del registro a eliminar: "))
-            delete(index)
-            print(f"Registro en índice {index} eliminado correctamente.")
+            codigo = input("Ingrese el codigo del registro a eliminar: ").ljust(TAMANIOCODIGO)
+            delete(codigo)
+            print(f"Registro en índice {codigo} eliminado correctamente.")
 
         elif opcion == '3':
             # Modificar datos
-            codigo = int(input("Ingrese el codigo del registro a modificar: "))
+            codigo = input("Ingrese el codigo del registro a modificar: ").ljust(TAMANIOCODIGO)
             apellidoaux,nombreaux,codigoaux = readByPK(codigo)
             print("Datos a modificar: ")
             print("apellido: ",apellidoaux)
             print("Nombre: ",nombreaux)
             print("Codigo: ",codigoaux)
-            apellido = input("Ingrese el nuevo apellido (dejar en blanco para no modificar): ")
-            nombre = input("Ingrese el nuevo nombre (dejar en blanco para no modificar): ")
-            codigo = input("Ingrese el nuevo código (dejar en blanco para no modificar): ")
+            apellido = input("Ingrese el nuevo apellido (dejar en blanco para no modificar): ").ljust(TAMANIOAPELLIDO)
+            nombre= input("Ingrese el nuevo nombre (dejar en blanco para no modificar): ").ljust(TAMANIONOMBRE)
+            codigoaux = input("Ingrese el nuevo código (dejar en blanco para no modificar): ").ljust(TAMANIOCODIGO)
 
-            # Convertir entradas vacías en None para evitar modificar
-            apellido = apellido if apellido != "" else None
-            nombre = nombre if nombre != "" else None
-            codigo = codigo if codigo != "" else None
-
-            update(apellido, nombre, codigo)
-            print(f"Registro en índice {index} modificado correctamente.")
+            update(apellido, nombre, codigoaux,codigo)
 
         elif opcion == '4':
             print("Listado de Clientas:")
             print("----------------------")
             listaClientes()
-
-        elif opcion == '5':
-            codigo = input("ingrese codigo: ")
-            mostrarcliente(codigo)
 
         elif opcion == '0':
             # Salir
@@ -197,8 +205,5 @@ def main():
             print("Opción no válida. Por favor, elija una opción del 0 al 4.")
 
     return
-#crearArchivo()
-#main()
-insert("Romero","Juancruz","30",)
-# #update("Gimenez","Juancruz","1234","1234")
-# delete(1234)
+if __name__ == '__main__':
+    main()
