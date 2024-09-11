@@ -34,7 +34,6 @@ def searchbypk(codigo):
     else:
         return searchOverflow(codigo)
 
-
 def readOverflow(codigo):
     i = TAMANIOHASH
     registro = readByOffset(i)
@@ -55,13 +54,11 @@ def readByPK(codigo):
     else:
         return readOverflow(codigo)
 
-
 def writeinOverflow(apellido,nombre,codigo):
     with open(PATH,"at") as archivo:
         archivo.write(apellido.ljust(TAMANIOAPELLIDO))
         archivo.write(nombre.ljust(TAMANIONOMBRE))
         archivo.write(codigo.ljust(TAMANIOCODIGO))
-
 
 def readByOffset(pos):
     with open(PATH,"rt") as archivo:
@@ -70,7 +67,6 @@ def readByOffset(pos):
         nombre = archivo.read(TAMANIONOMBRE)
         codigo = archivo.read(TAMANIOCODIGO)
         return apellido,nombre,codigo
-
 
 def writeByPK(new_apellido,new_nombre,new_codigo):
     pos = getoffset(new_codigo)
@@ -83,7 +79,6 @@ def writeByPK(new_apellido,new_nombre,new_codigo):
         else:
             return
 
-
 def writeByOffset(pos,apellido,nombre,codigo):
     #escribe donde le ordeno
     with open(PATH,"r+") as archivo:
@@ -92,13 +87,10 @@ def writeByOffset(pos,apellido,nombre,codigo):
         archivo.write(nombre.ljust(TAMANIONOMBRE))
         archivo.write(codigo.ljust(TAMANIOCODIGO))
 
-
 def delete(old_codigo):
     writeByOffset(searchbypk(old_codigo),"","","")
     garbageCollector()
 
-
-#como hago para hacer que mi update tambien borre(pasarle to.do vacio,ya que el codigo no puedo)
 def update(new_apellido, new_nombre, new_codigo,codigo_registro):
     old_registro = readByPK(codigo_registro)
     if new_apellido.isspace():
@@ -118,17 +110,17 @@ def mostrarcliente(codigo):
     print("Código: ", old_codigo)
     print("----------------------")
 
-
 def listaClientes():
     pos = 0
     apellido,nombre,codigo = readByOffset(pos)
     while codigo != "":
         if not codigo.isspace():
+            print("pos:",int(pos/TAMANIODATO))
             print("Apellido:", apellido)
             print("Nombre:", nombre)
             print("Código:", codigo)
             print("----------------------")
-        pos += 36
+        pos += TAMANIODATO
         apellido,nombre,codigo = readByOffset(pos)
 
 def garbageCollector():
@@ -148,8 +140,6 @@ def garbageCollector():
                 pos += 36
             archivo.seek(pos)
             registro = archivo.read(TAMANIODATO)
-
-
 
 def main():
     #crearArchivo()
