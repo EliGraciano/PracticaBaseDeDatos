@@ -1,0 +1,1 @@
+2 Codigo          4   Nombre          16  1   50  1   joa             11  218 2   nico            2   78  3   eli             20  190 4   pepe            3   106 7   aroldo          4   134 20  eeee            7   162 11  wwww            
